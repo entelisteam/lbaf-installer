@@ -1,0 +1,51 @@
+{
+  "name": "entelisteam/lbaf-installer",
+  "description": "Skeleton of an empty project on entelisteam/lbaf-core",
+  "type": "project",
+  "license": "MIT",
+  "require": {
+    "php": "^8.2",
+    "entelisteam/lbaf-core": "^4.0"
+  },
+  "require-dev": {
+    "entelisteam/lbaf-rector": "^1.0",
+    "phpunit/phpunit": "^12.5"
+  },
+  "autoload": {
+    "psr-4": {
+      "Skeleton\\": "src/",
+      "EntelisTeam\\Lbaf\\Installer\\": "installer/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Tests\\": "tests/"
+    }
+  },
+  "scripts": {
+    "post-create-project-cmd": "EntelisTeam\\Lbaf\\Installer\\Installer::run",
+    "serve": [
+      "Composer\\Config::disableProcessTimeout",
+      "php -S 127.0.0.1:8000 -t public src/index.php"
+    ],
+    "test": "vendor/bin/phpunit --display-warnings",
+    "up": [
+      "docker compose up -d --build --wait",
+      "@migrate:docker"
+    ],
+    "down": "docker compose down",
+    "migrate": "vendor/bin/phinx migrate",
+    "migrate:docker": "APP_DB_HOST=127.0.0.1:33306 APP_DB_USER=root APP_DB_PASSWORD= APP_DB_NAME=skeleton vendor/bin/phinx migrate",
+    "rector:check": "vendor/bin/rector process --dry-run",
+    "rector:fix": "vendor/bin/rector process",
+    "post-update-cmd": "test ! -f vendor/bin/rector || vendor/bin/rector process --dry-run"
+  },
+  "authors": [
+    {
+      "name": "Dim Entelis",
+      "homepage": "https://github.com/dentelis"
+    }
+  ],
+  "minimum-stability": "dev",
+  "prefer-stable": true
+}

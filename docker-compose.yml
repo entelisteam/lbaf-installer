@@ -1,0 +1,75 @@
+name: skeleton
+
+services:
+  db:
+    image: mariadb:11
+    container_name: skeleton-db
+    ports:
+      - "33306:3306"
+    environment:
+      MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: "yes"
+      MARIADB_DATABASE: skeleton
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  app:
+    build:
+      context: .
+      dockerfile: docker/app/Dockerfile
+      target: skeleton-dev
+    image: skeleton-app-dev:latest
+    container_name: skeleton-app
+    working_dir: /app
+    volumes:
+      - .:/app
+    environment:
+      APP_DB_HOST: db
+      APP_DB_USER: root
+      APP_DB_PASSWORD: ""
+      APP_DB_NAME: skeleton
+    # Embedded DNS докера иногда теряет UDP-запрос: glibc ждёт 5с до ретрая,
+    # из-за чего mysqli connect рандомно зависает на 5+ секунд
+    dns_opt:
+      - timeout:1
+      - attempts:3
+      - single-request-reopen
+    depends_on:
+      db:
+        condition: service_healthy
+
+  phpmyadmin:
+    image: phpmyadmin:5
+    container_name: skeleton-pma
+    # внутренний сервис: наружу не публикуется, доступ только через nginx по /dbui
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      # PMA_USER включает auth_type=config — логин не спрашивается
+      PMA_USER: root
+      PMA_PASSWORD: ""
+      # без этого phpmyadmin генерирует ссылки от корня и ломается под префиксом
+      PMA_ABSOLUTE_URI: http://localhost:8080/dbui/
+      UPLOAD_LIMIT: 64M
+    depends_on:
+      db:
+        condition: service_healthy
+
+  nginx:
+    image: nginx:alpine
+    container_name: skeleton-nginx
+    volumes:
+      - .:/app:ro
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "8080:8080"
+    depends_on:
+      - app
+      - phpmyadmin
+
+volumes:
+  db_data:

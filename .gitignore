@@ -1,0 +1,8 @@
+/vendor
+/.idea
+/.env
+/.phpunit.cache
+# @lbaf-if installer
+# lock-файл нужен готовому проекту, но не самому шаблону
+/composer.lock
+# @lbaf-endif
